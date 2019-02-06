@@ -2,12 +2,14 @@
 
 import csv
 import requests
-import os
 import argparse
 import time
+import sys
+from tqdm import tqdm
 
 
 if __name__ == '__main__':
+    # Read args, open file handles and iterators
     parser = argparse.ArgumentParser(description='Pull bulk prices from Scryfall.')
     parser.add_argument('-i', '--input-file', type=str, default='cards.csv',
                         help='Path to csv containing list of cards.')
@@ -21,21 +23,29 @@ if __name__ == '__main__':
     cards_reader = csv.reader(input_file, delimiter=',', quotechar='"')
     cards_writer = csv.writer(output_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
 
-    header = True
-    for card in cards_reader:
-        # Write out header for first row
-        if header:
-            cards_writer.writerow(card + ['price'])
-            header = False
-        
-        # Fetch price for data rows
-        else:
+    # Count rows for progress bar
+    n_cards = sum(1 for line in open(args.input_file, 'r')) - 1  
+    
+    # Copy header and add price column
+    header = next(cards_reader)
+    cards_writer.writerow(header + ['price'])
+
+    with tqdm(total=n_cards) as pbar:
+        for card in cards_reader:
+            # Fetch price for data rows
             payload = {"exact": card[0]}
+
             # Look for set
             if not card[1]:
                 payload.update({"set": card[1]})
 
             r = requests.get('https://api.scryfall.com/cards/named', params=payload).json()
+            pbar.update(1)
+
+            if r['object'] == 'error':
+                tqdm.write('Card "{}" not found!'.format(card[0]), file=sys.stderr)
+                continue
+
             if not card[2] and (str.lower(card[2]) == "t" or str.lower(card[2]) == "true"):
                 # Foil price
                 cards_writer.writerow(card + [r['prices']['usd_foil']])
