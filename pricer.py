@@ -46,7 +46,7 @@ if __name__ == '__main__':
                 tqdm.write('Card "{}" not found!'.format(card[0]), file=sys.stderr)
                 continue
 
-            if not card[2] and (str.lower(card[2]) == "t" or str.lower(card[2]) == "true"):
+            if card[2] and (str.lower(card[2]) in ['t', 'true', '1']):
                 # Foil price
                 cards_writer.writerow(card + [r['prices']['usd_foil']])
             else:
