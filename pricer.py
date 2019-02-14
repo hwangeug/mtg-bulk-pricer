@@ -36,7 +36,7 @@ if __name__ == '__main__':
             payload = {"exact": card[0]}
 
             # Look for set
-            if not card[1]:
+            if card[1] and len(card[1]) > 0:
                 payload.update({"set": card[1]})
 
             r = requests.get('https://api.scryfall.com/cards/named', params=payload).json()
